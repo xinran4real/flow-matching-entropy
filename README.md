@@ -47,16 +47,28 @@ To rigorously measure the mode collapse observed in DRTune, we introduced a comp
 **2.1 Differential Entropy via Hutchinson Trace Estimator**
 
 We propose an algorithm to estimate the differential entropy of the Flow Matching model. According to the Instantaneous Change of Variables formula, the change in log-probability density is:
+
+Let $p_t$ be the probability density at time $t$, then:
+
 $$
-\frac{d \log p_t(x(t))}{dt} = -\text{Tr}\left( \frac{\partial v_\theta(x(t), t)}{\partial x} \right)
+\frac{d \log p_t(\mathbf{x}_t)}{dt} = -\text{Tr}\left( \nabla_{\mathbf{x}} v_\theta(\mathbf{x}_t, t) \right)
 $$
+
+where $\mathbf{x}_t$ follows the flow, and $v_\theta$ is the velocity field.
+
 To avoid the computationally expensive Jacobian trace (O(D^2)), we use the Hutchinson Trace Estimator:
+
 $$
 \text{Tr}(J) \approx \mathbb{E}_{\epsilon \sim \mathcal{N}(0, I)} [\epsilon^T J \epsilon]
 $$
+
 -   **Validation:** We verified this algorithm on toy distributions (Gaussian, Uniform) and found the estimated results consistent with theoretical values.
 
 -   **Metric:** We found that the standard deviation (std) of ode_log_prob across training steps serves as a strong proxy for diversity.
+
+<p align="center">
+  <img src="./assets/eval_ode_logprob.jpg" alt="eval_ode_logprob" style="width:90%;">
+</p>
 
 **2.2 Vendi Score & RKE**
 
@@ -69,9 +81,11 @@ We integrated other diversity metrics into scripts/diversity_metrics/diversity_e
 
 -   **Hypothesis:** Could we use the more theoretically precise ode_log_prob (calculated via ODE trajectory) to replace the standard SDE-based log_prob in the GRPO importance ratio?
 
-    $$
-    r_t(\theta) = \frac{\exp(\text{ode\_log\_prob}_{\theta})}{\exp(\text{ode\_log\_prob}_{\text{old}})}
-    $$
+$$
+r_t(\theta) = \exp\left( \text{ODE-LP}_{\theta} - \text{ODE-LP}_{\text{old}} \right)
+$$
+
+where $\text{ODE-LP} = \text{ode\_log\_prob}$.
 
 -   **Experiment:** We modified the loss function to use the ratio of ODE log-probabilities estimated via the Hutchinson method.
 
