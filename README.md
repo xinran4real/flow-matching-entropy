@@ -48,13 +48,9 @@ To rigorously measure the mode collapse observed in DRTune, we introduced a comp
 
 We propose an algorithm to estimate the differential entropy of the Flow Matching model. According to the Instantaneous Change of Variables formula, the change in log-probability density is:
 
-Let $\mathbp_t$ be the probability density at time t, then:
-
 $$
 \frac{d \log p_t(\mathbf{x}_t)}{dt} = -\text{Tr}\left( \nabla_{\mathbf{x}} v_\theta(\mathbf{x}_t, t) \right)
 $$
-
-where $\mathbf{x}_t$ follows the flow, and $\mathbv_\theta$ is the velocity field.
 
 To avoid the computationally expensive Jacobian trace (O(D^2)), we use the Hutchinson Trace Estimator:
 
@@ -84,8 +80,6 @@ We integrated other diversity metrics into scripts/diversity_metrics/diversity_e
 $$
 r_t(\theta) = \exp\left( \text{ODE-LP}_{\theta} - \text{ODE-LP}_{\text{old}} \right)
 $$
-
-where $\text{ODE-LP} = \text{ode log prob}$.
 
 -   **Experiment:** We modified the loss function to use the ratio of ODE log-probabilities estimated via the Hutchinson method.
 
