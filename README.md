@@ -16,7 +16,7 @@ Our work consists of three main contributions:
 
 While standard Flow-GRPO treats rewards as black-box scalars, DRTune leverages the differentiability of reward models (e.g., PickScore, CLIPScore) to provide dense gradient signals.
 
-## Implementation
+### Implementation
 
 We modified the training loop to support direct gradient backpropagation. When config.use_reward_gradient = True:
 1.  The model generates latents via the ODE/SDE pipeline with gradient tracking enabled (requires_grad=True).
@@ -26,18 +26,18 @@ We modified the training loop to support direct gradient backpropagation. When c
 
 Note: The logic is based on the paper Deep Reward Supervisions for Tuning Text-to-Image Diffusion Models [arXiv:2405.00760].
 
-## 📊 Results: Efficiency vs. Quality
+### 📊 Results: Efficiency vs. Quality
 
 -   **Pros:** The reward curve ascends much faster than baseline Flow-GRPO.
 
 <p align="center">
-  <img src="./assets/performance_drtune.png" alt="Result" style="width:90%;">
+  <img src="./assets/performance_drtune.jpg" alt="performance_drtune" style="width:90%;">
 </p>
 
 -   **Cons (Reward Hacking):** Visual inspection reveals that the model overfits to the reward model's artifacts. We observed a significant drop in diversity and the emergence of unnatural lighting/textures solely to maximize the score.
 
 <p align="center">
-  <img src="./assets/visualization.png" alt="Result" style="width:90%;">
+  <img src="./assets/visualization.png" alt="visualization" style="width:90%;">
 </p>
 
 ## 🧬 Diversity Analysis & Entropy Estimation
@@ -47,13 +47,13 @@ To rigorously measure the mode collapse observed in DRTune, we introduced a comp
 **2.1 Differential Entropy via Hutchinson Trace Estimator**
 
 We propose an algorithm to estimate the differential entropy of the Flow Matching model. According to the Instantaneous Change of Variables formula, the change in log-probability density is:
-
+$$
 \frac{d \log p_t(x(t))}{dt} = -\text{Tr}\left( \frac{\partial v_\theta(x(t), t)}{\partial x} \right)
-
+$$
 To avoid the computationally expensive Jacobian trace (O(D^2)), we use the Hutchinson Trace Estimator:
-
+$$
 \text{Tr}(J) \approx \mathbb{E}_{\epsilon \sim \mathcal{N}(0, I)} [\epsilon^T J \epsilon]
-
+$$
 -   **Validation:** We verified this algorithm on toy distributions (Gaussian, Uniform) and found the estimated results consistent with theoretical values.
 
 -   **Metric:** We found that the standard deviation (std) of ode_log_prob across training steps serves as a strong proxy for diversity.
@@ -69,9 +69,9 @@ We integrated other diversity metrics into scripts/diversity_metrics/diversity_e
 
 -   **Hypothesis:** Could we use the more theoretically precise ode_log_prob (calculated via ODE trajectory) to replace the standard SDE-based log_prob in the GRPO importance ratio?
 
-    
+    $$
     r_t(\theta) = \frac{\exp(\text{ode\_log\_prob}_{\theta})}{\exp(\text{ode\_log\_prob}_{\text{old}})}
-    
+    $$
 
 -   **Experiment:** We modified the loss function to use the ratio of ODE log-probabilities estimated via the Hutchinson method.
 
@@ -80,18 +80,22 @@ We integrated other diversity metrics into scripts/diversity_metrics/diversity_e
 -   **Analysis:** The Hutchinson estimator relies on a random projection vector \epsilon. The variance introduced by the selection of one \epsilon is inaccurate, making the gradient estimator incredibly noisy and preventing stable RL updates.
 
 <p align="center">
-  <img src="./assets/performance_ode_logprob.png" alt="Result" style="width:90%;">
+  <img src="./assets/performance_ode_logprob.jpg" alt="performance_ode_logprob" style="width:90%;">
 </p>
 
 ## 💻 Usage
 
 **1. Environment Setup**
+Our implementation is based on the [Flow-GRPO](https://github.com/yifan123/flow_grpo) codebase, with most environments aligned.
+
+Clone this repository and install packages by:
 ```bash
-pip install -r requirements.txt
-# Ensure you have the 'flow_grpo' package installed in editable mode
+git clone [https://github.com/xinran4real/flow-matching-entropy.git]
+
+conda create -n fm_entropy python=3.10.16
+pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu126
 pip install -e .
 ```
-
 **2. Training with DRTune (Gradient Backprop)**
 
 To train using the DRTune logic (direct reward gradients) on PickScore:
